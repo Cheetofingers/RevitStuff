@@ -1,0 +1,70 @@
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Windows.Media.Imaging;
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using System.Reflection;
+using System.Linq;
+using adWin = Autodesk.Windows;
+#endregion
+
+namespace DraftingAddin
+{
+    [Transaction(TransactionMode.Manual)]
+    public class CsAddPanel : IExternalApplication
+    {
+        public Result OnStartup(UIControlledApplication application)
+        {
+            //Create custom tabs/panels/buttons here
+            
+            //This event handler runs once after revit has loaded addins and modifies buttons
+            application.ControlledApplication.ApplicationInitialized += OnApplicationInitialized;
+            return Result.Succeeded;
+        }
+        public Result OnShutdown(UIControlledApplication application)
+        {
+            return Result.Succeeded;
+        }
+        void OnApplicationInitialized(object sender,
+            Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)
+        {
+            adWin.RibbonControl adWinRibbon = adWin.ComponentManager.Ribbon; //variable for the adwin ribbon
+            adWin.RibbonTab AnnotateTab = adWinRibbon.FindTab("Annotate"); //get annotate tab
+            adWin.RibbonItemCollection SymbolsItems = GetItems(AnnotateTab, "symbol_shr"); //get the items (buttons etc) in Annotate->symbols
+            adWin.RibbonTab DraftingTab = adWinRibbon.FindTab("Drafting"); //Get custom Tab (in this case its called Drafting)
+            adWin.RibbonPanel PlaceSymbolsPanel = GetPanel(DraftingTab, "CustomCtrl_%WW Drafting%Symbols/Tags"); //get symbols/tags custom panel
+            try
+            {
+               PlaceSymbolsPanel.Source.Items.Add(SymbolsItems); //place the annotate -> symbols buttons in custom tab
+            }
+            catch
+            {}
+        }
+        public adWin.RibbonItemCollection GetItems(adWin.RibbonTab Tab, string PanelName)
+        {
+            adWin.RibbonItemCollection NewCol = new adWin.RibbonItemCollection();
+            foreach (adWin.RibbonPanel panel in Tab.Panels) //search panels in given tab
+            {
+                if (panel.Source.Id == PanelName) //find the panel by the given name
+                {
+                    foreach (adWin.RibbonItem item in panel.Source.Items) //add all the items from the panel
+                        NewCol.Add(item);
+                }
+            }
+            return NewCol; //return the items
+        }
+        public adWin.RibbonPanel GetPanel(adWin.RibbonTab Tab, string PanelName)
+        {
+            foreach (adWin.RibbonPanel panel in Tab.Panels) //search panels in given tab
+            {
+                if (panel.Source.Id == PanelName) //find the panel given by the name
+                {
+                    return panel;
+                }
+            }
+            return null;
+        }       
+    }
+}
